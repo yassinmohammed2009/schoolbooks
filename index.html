@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>إدارة مخازن كتب الحسين بن روح</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Cairo',sans-serif;background:#f0f4f8;color:#1e293b;direction:rtl}
+  :root{--navy:#0f2d5e;--teal:#0d7490;--teal-light:#e0f2fe;--red:#dc2626;--green:#16a34a;--amber:#d97706;--border:#e2e8f0;--card:#fff}
+
+  /* Layout */
+  .app{display:flex;min-height:100vh}
+  .sidebar{width:260px;background:var(--navy);color:#fff;display:flex;flex-direction:column;position:fixed;top:0;right:0;bottom:0;z-index:100}
+  .sidebar-header{padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05)}
+  .sidebar-logo{display:flex;align-items:center;gap:12px}
+  .logo-icon{width:36px;height:36px;background:var(--teal);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
+  .logo-text h1{font-size:14px;font-weight:700;line-height:1.2}
+  .logo-text h2{font-size:11px;color:rgba(255,255,255,.7);line-height:1.2}
+  .nav{padding:16px 12px;flex:1}
+  .nav-btn{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;border:none;background:transparent;color:rgba(255,255,255,.75);border-radius:8px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:14px;font-weight:500;margin-bottom:4px;transition:.15s}
+  .nav-btn:hover{background:rgba(255,255,255,.1);color:#fff}
+  .nav-btn.active{background:var(--teal);color:#fff}
+  .nav-icon{font-size:17px;width:20px;text-align:center}
+  .sidebar-footer{padding:14px 16px;border-top:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px}
+  .avatar{width:34px;height:34px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0}
+  .footer-info p{font-size:13px;font-weight:600}
+  .footer-info span{font-size:11px;color:rgba(255,255,255,.55)}
+
+  .main{margin-right:260px;flex:1;padding:28px}
+  .page{display:none}
+  .page.active{display:block}
+
+  /* Cards */
+  .page-title{font-size:26px;font-weight:800;color:var(--navy);margin-bottom:4px}
+  .page-sub{color:#64748b;font-size:14px;margin-bottom:24px}
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+  .stat-card{background:var(--card);border-radius:12px;padding:20px;border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .stat-icon{font-size:22px;margin-bottom:8px}
+  .stat-label{font-size:12px;color:#64748b;font-weight:500}
+  .stat-value{font-size:28px;font-weight:800;color:var(--navy);line-height:1.1;margin:4px 0 2px}
+  .stat-note{font-size:11px;color:#94a3b8}
+  .stat-card.danger .stat-value{color:var(--red)}
+  .stat-card.danger .stat-label{color:var(--red)}
+
+  /* Grid 2 col */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
+  .card{background:var(--card);border-radius:12px;border:1px solid var(--border);padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .card-title{font-size:15px;font-weight:700;color:var(--navy);margin-bottom:4px}
+  .card-sub{font-size:12px;color:#64748b;margin-bottom:16px}
+
+  /* Chart bars */
+  .chart-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .chart-label{font-size:13px;color:#374151;width:130px;flex-shrink:0;font-weight:500}
+  .chart-bar-wrap{flex:1;background:#f1f5f9;border-radius:4px;height:22px;overflow:hidden}
+  .chart-bar{height:100%;border-radius:4px;display:flex;align-items:center;padding-right:8px;font-size:11px;font-weight:700;color:#fff;transition:.3s}
+  .chart-bar.b1{background:var(--navy)}
+  .chart-bar.b2{background:var(--teal)}
+  .chart-bar.b3{background:#0891b2}
+
+  /* Alerts */
+  .alert-item{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:8px;background:#fff7ed;border:1px solid #fed7aa;margin-bottom:8px}
+  .alert-name{font-size:13px;font-weight:600;color:#92400e}
+  .alert-stage{font-size:11px;color:#b45309;margin-top:2px}
+  .badge-red{background:#fee2e2;color:#dc2626;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700}
+  .badge-amber{background:#fef3c7;color:#d97706;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700}
+
+  /* Table */
+  .table-wrap{background:var(--card);border-radius:12px;border:1px solid var(--border);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .table-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border)}
+  .filters{display:flex;gap:10px}
+  select,input{font-family:'Cairo',sans-serif;border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:13px;color:#374151;background:#fff;outline:none}
+  select:focus,input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(13,116,144,.1)}
+  table{width:100%;border-collapse:collapse}
+  th{background:#f8fafc;padding:11px 16px;text-align:right;font-size:12px;font-weight:700;color:#475569;border-bottom:1px solid var(--border)}
+  td{padding:12px 16px;font-size:13px;border-bottom:1px solid #f1f5f9;color:#374151}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:#f8fafc}
+  .badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700}
+  .badge-navy{background:#dbeafe;color:var(--navy)}
+  .badge-teal{background:#cffafe;color:#0e7490}
+  .badge-blue{background:#ede9fe;color:#7c3aed}
+  .badge-green{background:#dcfce7;color:#15803d}
+  .badge-orange{background:#fff7ed;color:#c2410c}
+
+  /* Buttons */
+  .btn{font-family:'Cairo',sans-serif;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:.15s}
+  .btn-primary{background:var(--teal);color:#fff}
+  .btn-primary:hover{background:#0e7490}
+  .btn-sm{padding:5px 11px;font-size:12px}
+  .btn-add{background:var(--teal);color:#fff;border-radius:8px;border:none;cursor:pointer;font-family:'Cairo',sans-serif;padding:9px 18px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+
+  /* Modal */
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center}
+  .modal-bg.open{display:flex}
+  .modal{background:#fff;border-radius:16px;width:500px;max-height:90vh;overflow-y:auto;padding:28px}
+  .modal-title{font-size:18px;font-weight:800;color:var(--navy);margin-bottom:20px}
+  .form-group{margin-bottom:14px}
+  .form-label{display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:5px}
+  .form-input{width:100%;font-family:'Cairo',sans-serif;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;color:#374151;outline:none}
+  .form-input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(13,116,144,.1)}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
+  .btn-cancel{background:#f1f5f9;color:#475569}
+  .btn-cancel:hover{background:#e2e8f0}
+
+  /* Inventory */
+  .inv-qty{font-size:15px;font-weight:800}
+  .inv-qty.low{color:var(--red)}
+  .inv-qty.ok{color:var(--green)}
+  .min-level{font-size:11px;color:#94a3b8;margin-top:1px}
+  .action-btns{display:flex;gap:6px}
+  .btn-icon{width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:.15s}
+  .btn-icon:hover{background:#f1f5f9}
+  .btn-icon.del:hover{background:#fee2e2;border-color:#fca5a5;color:var(--red)}
+  .btn-icon.edit:hover{background:#e0f2fe;border-color:#7dd3fc;color:var(--teal)}
+
+  /* Adjust modal */
+  .adj-book{background:#f8fafc;border-radius:8px;padding:12px;margin-bottom:16px;border:1px solid var(--border)}
+  .adj-book-name{font-size:15px;font-weight:700;color:var(--navy)}
+  .adj-book-info{font-size:12px;color:#64748b;margin-top:2px}
+  .adj-current{font-size:12px;color:#475569;margin-top:6px}
+  .type-btns{display:flex;gap:8px;margin-bottom:14px}
+  .type-btn{flex:1;padding:8px;border:2px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font-family:'Cairo',sans-serif;font-size:13px;font-weight:600;color:#475569;transition:.15s;text-align:center}
+  .type-btn.active-add{border-color:var(--green);background:#dcfce7;color:var(--green)}
+  .type-btn.active-remove{border-color:var(--red);background:#fee2e2;color:var(--red)}
+  .type-btn.active-set{border-color:var(--teal);background:#e0f2fe;color:var(--teal)}
+
+  /* Transactions */
+  .tx-add{color:var(--green)}
+  .tx-remove{color:var(--red)}
+  .tx-set{color:var(--teal)}
+
+  /* Responsive */
+  @media(max-width:900px){
+    .stats-grid{grid-template-columns:1fr 1fr}
+    .grid2{grid-template-columns:1fr}
+  }
+  @media(max-width:640px){
+    .sidebar{display:none}
+    .main{margin-right:0}
+    .stats-grid{grid-template-columns:1fr 1fr}
+  }
+  .empty{text-align:center;padding:40px;color:#94a3b8;font-size:14px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">
+      <div class="logo-icon">📚</div>
+      <div class="logo-text">
+        <h1>إدارة مخازن كتب</h1>
+        <h2>الحسين بن روح</h2>
+      </div>
+    </div>
+  </div>
+  <nav class="nav">
+    <button class="nav-btn active" onclick="showPage('dashboard')">
+      <span class="nav-icon">🏠</span> لوحة القيادة
+    </button>
+    <button class="nav-btn" onclick="showPage('books')">
+      <span class="nav-icon">📖</span> الكتب
+    </button>
+    <button class="nav-btn" onclick="showPage('inventory')">
+      <span class="nav-icon">📦</span> المخزن
+    </button>
+    <button class="nav-btn" onclick="showPage('transactions')">
+      <span class="nav-icon">🕐</span> سجل الحركات
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="avatar">م</div>
+    <div class="footer-info">
+      <p>محمد أنور عبد المجيد</p>
+      <span>من إعداد الطالب</span>
+    </div>
+  </div>
+</aside>
+
+<!-- Main -->
+<main class="main">
+
+  <!-- Dashboard -->
+  <div class="page active" id="page-dashboard">
+    <div class="page-title">لوحة القيادة</div>
+    <div class="page-sub">نظرة عامة على حالة المخزن والعمليات الأخيرة.</div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">📖</div>
+        <div class="stat-label">إجمالي الكتب</div>
+        <div class="stat-value" id="stat-total-books">0</div>
+        <div class="stat-note">عناوين مختلفة في النظام</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📦</div>
+        <div class="stat-label">إجمالي النسخ</div>
+        <div class="stat-value" id="stat-total-qty">0</div>
+        <div class="stat-note">مجموع النسخ المتوفرة</div>
+      </div>
+      <div class="stat-card danger">
+        <div class="stat-icon">⚠️</div>
+        <div class="stat-label">نواقص المخزن</div>
+        <div class="stat-value" id="stat-low-stock">0</div>
+        <div class="stat-note">كتب تحتاج إلى تعويض</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🔄</div>
+        <div class="stat-label">إجمالي الحركات</div>
+        <div class="stat-value" id="stat-total-tx">0</div>
+        <div class="stat-note">عمليات إضافة أو سحب</div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">الرصيد حسب المرحلة الدراسية</div>
+        <div class="card-sub">إجمالي النسخ المتوفرة في المخزن لكل مرحلة</div>
+        <div id="chart-stage"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">تنبيهات نقص الرصيد</div>
+        <div class="card-sub">الكتب التي وصلت إلى الحد الأدنى أو أقل</div>
+        <div id="low-stock-list"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">آخر حركات المخزن</div>
+      <div class="card-sub">أحدث عمليات الإضافة والسحب</div>
+      <table>
+        <thead>
+          <tr><th>الكتاب</th><th>المرحلة</th><th>النوع</th><th>الكمية</th><th>الملاحظة</th><th>التاريخ</th></tr>
+        </thead>
+        <tbody id="recent-tx"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Books -->
+  <div class="page" id="page-books">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+      <div>
+        <div class="page-title">إدارة الكتب</div>
+        <div class="page-sub">سجل وعناوين الكتب الدراسية في النظام.</div>
+      </div>
+      <button class="btn-add" onclick="openAddBook()">+ إضافة كتاب جديد</button>
+    </div>
+    <div class="table-wrap">
+      <div class="table-header">
+        <div class="filters">
+          <select id="filter-stage" onchange="renderBooks()">
+            <option value="">جميع المراحل</option>
+            <option>الرابع العلمي</option>
+            <option>الخامس العلمي</option>
+            <option>السادس العلمي</option>
+          </select>
+          <select id="filter-subject" onchange="renderBooks()">
+            <option value="">جميع المواد</option>
+          </select>
+          <input type="text" id="filter-search" placeholder="بحث..." oninput="renderBooks()" style="width:160px">
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr><th>عنوان الكتاب</th><th>المرحلة</th><th>المادة</th><th>سنة الطبع</th><th>الناشر</th><th>الرصيد</th><th>الإجراءات</th></tr>
+        </thead>
+        <tbody id="books-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Inventory -->
+  <div class="page" id="page-inventory">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+      <div>
+        <div class="page-title">إدارة المخزن</div>
+        <div class="page-sub">مستويات المخزون الحالية وتعديل الكميات.</div>
+      </div>
+      <select id="inv-filter-stage" onchange="renderInventory()" style="padding:9px 14px">
+        <option value="">جميع المراحل</option>
+        <option>الرابع العلمي</option>
+        <option>الخامس العلمي</option>
+        <option>السادس العلمي</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>الكتاب</th><th>المرحلة</th><th>المادة</th><th>الكمية الحالية</th><th>الحد الأدنى</th><th>الحالة</th><th>تعديل</th></tr>
+        </thead>
+        <tbody id="inv-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Transactions -->
+  <div class="page" id="page-transactions">
+    <div style="margin-bottom:20px">
+      <div class="page-title">سجل الحركات</div>
+      <div class="page-sub">تاريخ جميع عمليات الإضافة والسحب من المخزن.</div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-header">
+        <div class="filters">
+          <select id="tx-filter-type" onchange="renderTransactions()">
+            <option value="">جميع الأنواع</option>
+            <option value="add">إضافة</option>
+            <option value="remove">سحب</option>
+            <option value="set">تحديد</option>
+          </select>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr><th>الكتاب</th><th>المرحلة</th><th>نوع الحركة</th><th>الكمية</th><th>الملاحظة</th><th>التاريخ</th></tr>
+        </thead>
+        <tbody id="tx-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+</div>
+
+<!-- Add/Edit Book Modal -->
+<div class="modal-bg" id="book-modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">إضافة كتاب جديد</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">المرحلة الدراسية *</label>
+        <select class="form-input" id="book-stage" onchange="updateSubjectOptions()">
+          <option value="">اختر المرحلة</option>
+          <option>الرابع العلمي</option>
+          <option>الخامس العلمي</option>
+          <option>السادس العلمي</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">المادة الدراسية *</label>
+        <select class="form-input" id="book-subject">
+          <option value="">اختر أولاً المرحلة</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">عنوان الكتاب *</label>
+      <input class="form-input" id="book-title" placeholder="مثال: الفيزياء للصف الرابع">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">الجزء</label>
+        <input class="form-input" id="book-part" placeholder="جزء أول / جزء ثاني">
+      </div>
+      <div class="form-group">
+        <label class="form-label">سنة الطباعة *</label>
+        <input class="form-input" type="number" id="book-year" value="2024">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">الناشر</label>
+        <input class="form-input" id="book-publisher" value="وزارة التربية">
+      </div>
+      <div class="form-group">
+        <label class="form-label">الحد الأدنى للمخزون</label>
+        <input class="form-input" type="number" id="book-min" value="10">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">ملاحظات</label>
+      <input class="form-input" id="book-desc" placeholder="ملاحظات إضافية (اختياري)">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="closeModal('book-modal')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveBook()">حفظ الكتاب</button>
+    </div>
+  </div>
+</div>
+
+<!-- Adjust Inventory Modal -->
+<div class="modal-bg" id="adj-modal">
+  <div class="modal" style="width:420px">
+    <div class="modal-title">تعديل المخزون</div>
+    <div class="adj-book" id="adj-book-info"></div>
+    <div class="type-btns">
+      <button class="type-btn active-add" onclick="setAdjType('add')" id="adj-add">➕ إضافة</button>
+      <button class="type-btn" onclick="setAdjType('remove')" id="adj-remove">➖ سحب</button>
+      <button class="type-btn" onclick="setAdjType('set')" id="adj-set">🔢 تحديد</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">الكمية</label>
+      <input class="form-input" type="number" id="adj-qty" value="1" min="0">
+    </div>
+    <div class="form-group">
+      <label class="form-label">ملاحظة (اختياري)</label>
+      <input class="form-input" id="adj-note" placeholder="مثال: استلام من المستودع">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="closeModal('adj-modal')">إلغاء</button>
+      <button class="btn btn-primary" onclick="applyAdjust()">تطبيق</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== DATA STORE =====
+let books = [
+  {id:1,title:'الفيزياء',subject:'الفيزياء',stage:'الرابع العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:20},
+  {id:2,title:'الكيمياء',subject:'الكيمياء',stage:'الرابع العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:20},
+  {id:3,title:'الرياضيات',subject:'الرياضيات',stage:'الرابع العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:25},
+  {id:4,title:'اللغة الإنجليزية',subject:'اللغة الإنجليزية',stage:'الرابع العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:20},
+  {id:5,title:'الكراسة',subject:'الكراسة',stage:'الرابع العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:30},
+  {id:6,title:'اللغة العربية جزء أول',subject:'اللغة العربية (جزء أول)',stage:'الرابع العلمي',part:'جزء أول',printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:20},
+  {id:7,title:'اللغة العربية جزء ثاني',subject:'اللغة العربية (جزء ثاني)',stage:'الرابع العلمي',part:'جزء ثاني',printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:20},
+  {id:8,title:'الأحياء',subject:'الأحياء',stage:'الرابع العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:20},
+  {id:9,title:'التربية الإسلامية',subject:'التربية الإسلامية',stage:'الرابع العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:20},
+  {id:10,title:'جرائم حزب البعث البائد',subject:'جرائم حزب البعث البائد',stage:'الرابع العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:15},
+  {id:11,title:'الحاسوب',subject:'الحاسوب',stage:'الرابع العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:15},
+  {id:12,title:'اللغة الكردية',subject:'اللغة الكردية',stage:'الرابع العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:15},
+  {id:13,title:'الفيزياء',subject:'الفيزياء',stage:'الخامس العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:20},
+  {id:14,title:'الكيمياء',subject:'الكيمياء',stage:'الخامس العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:20},
+  {id:15,title:'الرياضيات',subject:'الرياضيات',stage:'الخامس العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:25},
+  {id:16,title:'اللغة الإنجليزية',subject:'اللغة الإنجليزية',stage:'الخامس العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:20},
+  {id:17,title:'الكراسة',subject:'الكراسة',stage:'الخامس العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:30},
+  {id:18,title:'اللغة العربية جزء أول',subject:'اللغة العربية (جزء أول)',stage:'الخامس العلمي',part:'جزء أول',printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:20},
+  {id:19,title:'اللغة العربية جزء ثاني',subject:'اللغة العربية (جزء ثاني)',stage:'الخامس العلمي',part:'جزء ثاني',printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:20},
+  {id:20,title:'الأحياء',subject:'الأحياء',stage:'الخامس العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:20},
+  {id:21,title:'التربية الإسلامية',subject:'التربية الإسلامية',stage:'الخامس العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:20},
+  {id:22,title:'الحاسوب',subject:'الحاسوب',stage:'الخامس العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:15},
+  {id:23,title:'اللغة الكردية',subject:'اللغة الكردية',stage:'الخامس العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:15},
+  {id:24,title:'الفيزياء',subject:'الفيزياء',stage:'السادس العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:20},
+  {id:25,title:'الكيمياء',subject:'الكيمياء',stage:'السادس العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:20},
+  {id:26,title:'الرياضيات',subject:'الرياضيات',stage:'السادس العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:25},
+  {id:27,title:'اللغة الإنجليزية',subject:'اللغة الإنجليزية',stage:'السادس العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:20},
+  {id:28,title:'الكراسة',subject:'الكراسة',stage:'السادس العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:30},
+  {id:29,title:'اللغة العربية جزء أول',subject:'اللغة العربية (جزء أول)',stage:'السادس العلمي',part:'جزء أول',printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:20},
+  {id:30,title:'اللغة العربية جزء ثاني',subject:'اللغة العربية (جزء ثاني)',stage:'السادس العلمي',part:'جزء ثاني',printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:20},
+  {id:31,title:'الأحياء',subject:'الأحياء',stage:'السادس العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:20},
+  {id:32,title:'التربية الإسلامية',subject:'التربية الإسلامية',stage:'السادس العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:20},
+  {id:33,title:'الحاسوب',subject:'الحاسوب',stage:'السادس العلمي',part:null,printYear:2023,publisher:'وزارة التربية',description:null,minStockLevel:15},
+];
+
+let inventory = [
+  {id:1,bookId:1,quantity:45},{id:2,bookId:2,quantity:38},{id:3,bookId:3,quantity:52},
+  {id:4,bookId:4,quantity:41},{id:5,bookId:5,quantity:60},{id:6,bookId:6,quantity:35},
+  {id:7,bookId:7,quantity:33},{id:8,bookId:8,quantity:44},{id:9,bookId:9,quantity:47},
+  {id:10,bookId:10,quantity:8},{id:11,bookId:11,quantity:12},{id:12,bookId:12,quantity:9},
+  {id:13,bookId:13,quantity:40},{id:14,bookId:14,quantity:35},{id:15,bookId:15,quantity:50},
+  {id:16,bookId:16,quantity:38},{id:17,bookId:17,quantity:55},{id:18,bookId:18,quantity:30},
+  {id:19,bookId:19,quantity:28},{id:20,bookId:20,quantity:42},{id:21,bookId:21,quantity:45},
+  {id:22,bookId:22,quantity:11},{id:23,bookId:23,quantity:14},
+  {id:24,bookId:24,quantity:50},{id:25,bookId:25,quantity:42},{id:26,bookId:26,quantity:58},
+  {id:27,bookId:27,quantity:44},{id:28,bookId:28,quantity:65},{id:29,bookId:29,quantity:37},
+  {id:30,bookId:30,quantity:35},{id:31,bookId:31,quantity:48},{id:32,bookId:32,quantity:51},
+  {id:33,bookId:33,quantity:14},
+];
+
+let transactions = inventory.map((inv,i) => ({
+  id:i+1, bookId:inv.bookId, type:'set', quantity:inv.quantity,
+  note:'رصيد افتتاحي', createdAt: new Date(Date.now() - i*60000).toISOString()
+}));
+
+let nextId = 34;
+let editingBookId = null;
+let adjBookId = null;
+let adjType = 'add';
+
+const SUBJECTS_ALL = ['الفيزياء','الكيمياء','الرياضيات','اللغة الإنجليزية','الكراسة','اللغة العربية (جزء أول)','اللغة العربية (جزء ثاني)','الأحياء','التربية الإسلامية','الحاسوب'];
+const SUBJECTS_4_5 = [...SUBJECTS_ALL,'اللغة الكردية'];
+const SUBJECTS_4_ONLY = [...SUBJECTS_4_5,'جرائم حزب البعث البائد'];
+
+function getSubjectsForStage(stage){
+  if(stage==='الرابع العلمي') return SUBJECTS_4_ONLY;
+  if(stage==='الخامس العلمي') return SUBJECTS_4_5;
+  return SUBJECTS_ALL;
+}
+
+function getInventory(bookId){
+  const inv = inventory.find(i=>i.bookId===bookId);
+  return inv ? inv.quantity : 0;
+}
+
+function stageBadge(s){
+  if(s==='الرابع العلمي') return `<span class="badge badge-navy">${s}</span>`;
+  if(s==='الخامس العلمي') return `<span class="badge badge-teal">${s}</span>`;
+  return `<span class="badge badge-blue">${s}</span>`;
+}
+
+function formatDate(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString('ar-IQ',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+// ===== NAVIGATION =====
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if(id==='dashboard') renderDashboard();
+  if(id==='books') renderBooks();
+  if(id==='inventory') renderInventory();
+  if(id==='transactions') renderTransactions();
+}
+
+// ===== DASHBOARD =====
+function renderDashboard(){
+  const totalBooks = books.length;
+  const totalQty = inventory.reduce((s,i)=>s+i.quantity,0);
+  const lowStock = inventory.filter(i=>{const b=books.find(b=>b.id===i.bookId);return b&&i.quantity<b.minStockLevel;}).length;
+  const totalTx = transactions.length;
+  document.getElementById('stat-total-books').textContent = totalBooks;
+  document.getElementById('stat-total-qty').textContent = totalQty.toLocaleString('ar');
+  document.getElementById('stat-low-stock').textContent = lowStock;
+  document.getElementById('stat-total-tx').textContent = totalTx;
+
+  // Chart by stage
+  const stages = ['الرابع العلمي','الخامس العلمي','السادس العلمي'];
+  const maxQty = Math.max(...stages.map(s=>inventory.filter(i=>books.find(b=>b.id===i.bookId&&b.stage===s)).reduce((t,i)=>t+i.quantity,0)));
+  const classes = ['b1','b2','b3'];
+  document.getElementById('chart-stage').innerHTML = stages.map((s,idx)=>{
+    const qty = inventory.filter(i=>books.find(b=>b.id===i.bookId&&b.stage===s)).reduce((t,i)=>t+i.quantity,0);
+    const pct = maxQty ? Math.round(qty/maxQty*100) : 0;
+    return `<div class="chart-row">
+      <div class="chart-label">${s}</div>
+      <div class="chart-bar-wrap"><div class="chart-bar ${classes[idx]}" style="width:${pct}%">${qty}</div></div>
+    </div>`;
+  }).join('');
+
+  // Low stock
+  const lowItems = inventory.filter(i=>{const b=books.find(b=>b.id===i.bookId);return b&&i.quantity<b.minStockLevel;});
+  document.getElementById('low-stock-list').innerHTML = lowItems.length===0
+    ? '<div class="empty">لا توجد تنبيهات حالياً</div>'
+    : lowItems.map(i=>{
+        const b=books.find(b=>b.id===i.bookId);
+        return `<div class="alert-item">
+          <div><div class="alert-name">${b.title}</div><div class="alert-stage">${b.stage} - ${b.subject}</div></div>
+          <span class="badge-red">الرصيد: ${i.quantity}</span>
+        </div>`;
+      }).join('');
+
+  // Recent transactions
+  const recent = [...transactions].reverse().slice(0,8);
+  document.getElementById('recent-tx').innerHTML = recent.length===0
+    ? '<tr><td colspan="6" class="empty">لا توجد حركات</td></tr>'
+    : recent.map(tx=>{
+        const b=books.find(b=>b.id===tx.bookId);
+        const typeMap={add:'إضافة',remove:'سحب',set:'تحديد'};
+        const cls={add:'tx-add',remove:'tx-remove',set:'tx-set'};
+        return `<tr>
+          <td><strong>${b?b.title:'—'}</strong></td>
+          <td>${b?stageBadge(b.stage):'—'}</td>
+          <td class="${cls[tx.type]||''}">${typeMap[tx.type]||tx.type}</td>
+          <td><strong>${tx.quantity}</strong></td>
+          <td style="color:#64748b">${tx.note||'—'}</td>
+          <td style="color:#94a3b8;font-size:12px">${formatDate(tx.createdAt)}</td>
+        </tr>`;
+      }).join('');
+}
+
+// ===== BOOKS =====
+function renderBooks(){
+  const stage = document.getElementById('filter-stage').value;
+  const subject = document.getElementById('filter-subject').value;
+  const search = document.getElementById('filter-search').value.trim().toLowerCase();
+
+  // Populate subject filter
+  const subjectSel = document.getElementById('filter-subject');
+  const subjects = [...new Set(books.map(b=>b.subject))].sort();
+  const curSub = subjectSel.value;
+  subjectSel.innerHTML = '<option value="">جميع المواد</option>' + subjects.map(s=>`<option${s===curSub?' selected':''}>${s}</option>`).join('');
+
+  let filtered = books;
+  if(stage) filtered = filtered.filter(b=>b.stage===stage);
+  if(subject) filtered = filtered.filter(b=>b.subject===subject);
+  if(search) filtered = filtered.filter(b=>b.title.includes(search)||b.subject.includes(search)||b.stage.includes(search));
+
+  document.getElementById('books-tbody').innerHTML = filtered.length===0
+    ? '<tr><td colspan="7" class="empty">لا توجد نتائج</td></tr>'
+    : filtered.map(b=>{
+        const qty = getInventory(b.id);
+        const isLow = qty < b.minStockLevel;
+        return `<tr>
+          <td><strong>${b.title}</strong>${b.part?`<br><span style="font-size:11px;color:#94a3b8">${b.part}</span>`:''}</td>
+          <td>${stageBadge(b.stage)}</td>
+          <td style="color:#374151">${b.subject}</td>
+          <td style="color:#64748b">${b.printYear}</td>
+          <td style="color:#64748b">${b.publisher||'—'}</td>
+          <td><span class="${isLow?'badge-red':'badge-green'}">${qty}</span></td>
+          <td>
+            <div class="action-btns">
+              <button class="btn-icon edit" onclick="openEditBook(${b.id})" title="تعديل">✏️</button>
+              <button class="btn-icon del" onclick="deleteBook(${b.id})" title="حذف">🗑️</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+}
+
+function updateSubjectOptions(){
+  const stage = document.getElementById('book-stage').value;
+  const sel = document.getElementById('book-subject');
+  const subjects = stage ? getSubjectsForStage(stage) : [];
+  sel.innerHTML = stage
+    ? subjects.map(s=>`<option>${s}</option>`).join('')
+    : '<option value="">اختر أولاً المرحلة</option>';
+}
+
+function openAddBook(){
+  editingBookId = null;
+  document.getElementById('modal-title').textContent = 'إضافة كتاب جديد';
+  document.getElementById('book-stage').value='';
+  document.getElementById('book-subject').innerHTML='<option value="">اختر أولاً المرحلة</option>';
+  document.getElementById('book-title').value='';
+  document.getElementById('book-part').value='';
+  document.getElementById('book-year').value='2024';
+  document.getElementById('book-publisher').value='وزارة التربية';
+  document.getElementById('book-min').value='10';
+  document.getElementById('book-desc').value='';
+  document.getElementById('book-modal').classList.add('open');
+}
+
+function openEditBook(id){
+  const b = books.find(b=>b.id===id);
+  if(!b) return;
+  editingBookId = id;
+  document.getElementById('modal-title').textContent = 'تعديل الكتاب';
+  document.getElementById('book-stage').value = b.stage;
+  updateSubjectOptions();
+  document.getElementById('book-subject').value = b.subject;
+  document.getElementById('book-title').value = b.title;
+  document.getElementById('book-part').value = b.part||'';
+  document.getElementById('book-year').value = b.printYear;
+  document.getElementById('book-publisher').value = b.publisher||'';
+  document.getElementById('book-min').value = b.minStockLevel;
+  document.getElementById('book-desc').value = b.description||'';
+  document.getElementById('book-modal').classList.add('open');
+}
+
+function saveBook(){
+  const stage = document.getElementById('book-stage').value;
+  const subject = document.getElementById('book-subject').value;
+  const title = document.getElementById('book-title').value.trim();
+  const year = parseInt(document.getElementById('book-year').value)||2024;
+  const part = document.getElementById('book-part').value.trim()||null;
+  const publisher = document.getElementById('book-publisher').value.trim()||null;
+  const min = parseInt(document.getElementById('book-min').value)||10;
+  const desc = document.getElementById('book-desc').value.trim()||null;
+
+  if(!stage||!subject||!title){alert('يرجى ملء الحقول المطلوبة (المرحلة، المادة، العنوان)');return;}
+
+  if(editingBookId){
+    const b = books.find(b=>b.id===editingBookId);
+    if(b){Object.assign(b,{stage,subject,title,part,printYear:year,publisher,minStockLevel:min,description:desc});}
+  } else {
+    const newBook = {id:nextId++,stage,subject,title,part,printYear:year,publisher,description:desc,minStockLevel:min};
+    books.push(newBook);
+    inventory.push({id:nextId,bookId:newBook.id,quantity:0});
+  }
+  closeModal('book-modal');
+  renderBooks();
+  save();
+}
+
+function deleteBook(id){
+  if(!confirm('هل أنت متأكد من حذف هذا الكتاب؟')) return;
+  books = books.filter(b=>b.id!==id);
+  inventory = inventory.filter(i=>i.bookId!==id);
+  transactions = transactions.filter(t=>t.bookId!==id);
+  renderBooks();
+  save();
+}
+
+// ===== INVENTORY =====
+function renderInventory(){
+  const stage = document.getElementById('inv-filter-stage').value;
+  let items = inventory.map(i=>{
+    const b = books.find(b=>b.id===i.bookId);
+    return {...i, book:b};
+  }).filter(i=>i.book);
+  if(stage) items = items.filter(i=>i.book.stage===stage);
+
+  document.getElementById('inv-tbody').innerHTML = items.length===0
+    ? '<tr><td colspan="7" class="empty">لا توجد بيانات</td></tr>'
+    : items.map(i=>{
+        const isLow = i.quantity < i.book.minStockLevel;
+        const statusBadge = isLow
+          ? '<span class="badge-red">نقص</span>'
+          : '<span class="badge-green">متوفر</span>';
+        return `<tr>
+          <td><strong>${i.book.title}</strong>${i.book.part?`<br><span style="font-size:11px;color:#94a3b8">${i.book.part}</span>`:''}</td>
+          <td>${stageBadge(i.book.stage)}</td>
+          <td>${i.book.subject}</td>
+          <td>
+            <div class="inv-qty ${isLow?'low':'ok'}">${i.quantity}</div>
+          </td>
+          <td style="color:#64748b">${i.book.minStockLevel}</td>
+          <td>${statusBadge}</td>
+          <td>
+            <button class="btn btn-primary btn-sm" onclick="openAdjust(${i.bookId})">تعديل</button>
+          </td>
+        </tr>`;
+      }).join('');
+}
+
+function openAdjust(bookId){
+  const b = books.find(b=>b.id===bookId);
+  const inv = inventory.find(i=>i.bookId===bookId);
+  if(!b||!inv) return;
+  adjBookId = bookId;
+  adjType = 'add';
+  document.getElementById('adj-book-info').innerHTML = `
+    <div class="adj-book-name">${b.title}</div>
+    <div class="adj-book-info">${b.stage} — ${b.subject}</div>
+    <div class="adj-current">الرصيد الحالي: <strong>${inv.quantity}</strong> نسخة | الحد الأدنى: ${b.minStockLevel}</div>
+  `;
+  setAdjType('add');
+  document.getElementById('adj-qty').value = 1;
+  document.getElementById('adj-note').value = '';
+  document.getElementById('adj-modal').classList.add('open');
+}
+
+function setAdjType(t){
+  adjType = t;
+  ['add','remove','set'].forEach(x=>{
+    const btn = document.getElementById('adj-'+x);
+    btn.className = 'type-btn';
+    if(x===t) btn.className += ' active-'+x;
+  });
+}
+
+function applyAdjust(){
+  const qty = parseInt(document.getElementById('adj-qty').value)||0;
+  const note = document.getElementById('adj-note').value.trim()||null;
+  const inv = inventory.find(i=>i.bookId===adjBookId);
+  if(!inv) return;
+  if(adjType==='add') inv.quantity += qty;
+  else if(adjType==='remove') inv.quantity = Math.max(0, inv.quantity - qty);
+  else inv.quantity = qty;
+  transactions.unshift({id:nextId++,bookId:adjBookId,type:adjType,quantity:qty,note,createdAt:new Date().toISOString()});
+  closeModal('adj-modal');
+  renderInventory();
+  save();
+}
+
+// ===== TRANSACTIONS =====
+function renderTransactions(){
+  const type = document.getElementById('tx-filter-type').value;
+  let items = [...transactions].reverse();
+  if(type) items = items.filter(t=>t.type===type);
+  const typeMap={add:'إضافة',remove:'سحب',set:'تحديد'};
+  const cls={add:'tx-add',remove:'tx-remove',set:'tx-set'};
+  document.getElementById('tx-tbody').innerHTML = items.length===0
+    ? '<tr><td colspan="6" class="empty">لا توجد حركات</td></tr>'
+    : items.map(tx=>{
+        const b = books.find(b=>b.id===tx.bookId);
+        return `<tr>
+          <td><strong>${b?b.title:'كتاب محذوف'}</strong></td>
+          <td>${b?stageBadge(b.stage):'—'}</td>
+          <td class="${cls[tx.type]||''}">${typeMap[tx.type]||tx.type}</td>
+          <td><strong>${tx.quantity}</strong></td>
+          <td style="color:#64748b">${tx.note||'—'}</td>
+          <td style="color:#94a3b8;font-size:12px">${formatDate(tx.createdAt)}</td>
+        </tr>`;
+      }).join('');
+}
+
+// ===== MODAL =====
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+window.addEventListener('click', e=>{
+  if(e.target.classList.contains('modal-bg')) e.target.classList.remove('open');
+});
+
+// ===== LOCAL STORAGE =====
+function save(){
+  localStorage.setItem('hbr_books', JSON.stringify(books));
+  localStorage.setItem('hbr_inventory', JSON.stringify(inventory));
+  localStorage.setItem('hbr_transactions', JSON.stringify(transactions));
+  localStorage.setItem('hbr_nextId', nextId);
+}
+
+function load(){
+  const b = localStorage.getItem('hbr_books');
+  const i = localStorage.getItem('hbr_inventory');
+  const t = localStorage.getItem('hbr_transactions');
+  const n = localStorage.getItem('hbr_nextId');
+  if(b) books = JSON.parse(b);
+  if(i) inventory = JSON.parse(i);
+  if(t) transactions = JSON.parse(t);
+  if(n) nextId = parseInt(n);
+}
+
+// ===== INIT =====
+load();
+renderDashboard();
+renderBooks();
+</script>
+</body>
+</html>
